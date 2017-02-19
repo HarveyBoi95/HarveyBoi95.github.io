@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>Programming for Graphics & Games</title>
+		<style>
+			body { margin: 0; }
+			canvas { width: 100%; height: 100% }
+		</style>
+	</head>
+	<body>
+		<script src="js/three.js"></script>
+		<script src="js/threex.keyboardstate.js"></script>
+		<script src="js/MTLLoader.js"></script>
+		<script src="js/OBJLoader.js"></script>
+		<script src='js/threex.universalloader.js'></script>
+		<script>
+		
+			//=================================================================================================
+			
+			var keyboard = new THREEx.KeyboardState();//Setting up keyboard input
+			var scene = new THREE.Scene();
+			var camera = new THREE.PerspectiveCamera( 75, window.innerWidth/window.innerHeight, 0.1, 1000 );
+
+			var renderer = new THREE.WebGLRenderer();//Setting WebGL renderer
+			renderer.setSize( window.innerWidth, window.innerHeight );
+			document.body.appendChild( renderer.domElement );
+
+			camera.position.x = 100;//Setting camera position
+			camera.position.y = 100;
+			camera.position.z = 100;
+			camera.rotation.x = 0;
+			camera.rotation.y = 9.5;
+			
+			//=====================Enemy Controls==============================================================
+			
+			var texture;// Un-initialised texture variable to randomise colour of enemies
+			
+			var loader = new THREE.TextureLoader();//Creating loader for loading texture
+			
+			
+			var enemyAmount = 100;
+			var enemies = [];//Array for holding enemies
+				
+				for (var i = 0; i < enemyAmount; i++)
+				{
+					var enemy = new THREE.SphereGeometry(1, 32, 32);
+					var material2 = new THREE.MeshBasicMaterial( {color: 0xff0000} );
+					var sphere = new THREE.Mesh(enemy, texture);
+					scene.add(sphere);
+					sphere.position.y = Math.random()*30 + 1;//Randomising enemy spawn locations
+					sphere.position.x = Math.random()*30 + 1;
+					sphere.position.z = Math.random()*-200 + -170;
+					enemies.push(sphere);
+				}
+				
+			//=====================InitialisePlayer==============================================================
+			
+				var playerGeometry = new THREE.SphereGeometry( 1, 32, 32);
+				var playerMaterial = new THREE.MeshBasicMaterial ( {color: 0x4286f4} );
+				var player = new THREE.Mesh(playerGeometry, playerMaterial)
+			
+				player.position.y = 10;
+				player.position.x = 15;
+				player.position.z = 0;
+				
+			//=======================Loading Model=====================================================================
+			
+			var mtlLoader = new THREE.MTLLoader();
+			mtlLoader.load('SpaceShip.mtl', function(shipMaterials)//Creating loader to load mtl
+			{
+				shipMaterials.preload();
+				
+				var objLoader = new THREE.OBJLoader();
+				objLoader.setMaterials(shipMaterials);//Setting material to obj
+				objLoader.load('SpaceShip.obj', function(playerShip)
+				{
+					scene.add(playerShip);
+					playerShip.position.x = 100;
+					playerShip.position.y = 100;
+					playerShip.position.z = 110;
+					playerShip.rotation.y = 4.1;
+					playerShip.scale.set (0.1, 0.1, 0.1);
+				});
+				
+			});
+			//=======================Lights=====================================================================
+			
+			var ambLight = new THREE.AmbientLight( 0xf44242, 5 );
+			scene.add( ambLight );
+			ambLight.position.set(15,15,0);
+			
+			var plight = new THREE.PointLight( 0xff0000, 5000, 100 );
+			plight.position.set( 100, 100, 105 );
+			scene.add( plight );
+			
+			//=======================SkyBox=====================================================================
+			
+			var textureLoader = new THREE.TextureLoader();
+			
+			var urls = ["images/Left.png", "images/Right.png", "images/Up.png", "images/Down.png", "images/Front.png", "images/Back.png"];
+						
+			var skyGeometry = new THREE.CubeGeometry( 1000, 1000, 1000 );	//Creating the box to hold the images
+
+			var materialArray = []; 
+			for(var i = 0; i < 6; i++)
+			{
+				materialArray.push(new THREE.MeshBasicMaterial({//Adding the 6 images to the innter faces of the cube
+					map: textureLoader.load(urls[i]),
+					side: THREE.BackSide
+				}));
+			}
+
+			var skyMaterial = new THREE.MultiMaterial(materialArray);
+			var skyBox = new THREE.Mesh(skyGeometry, skyMaterial);
+			scene.add(skyBox);
+			//=================================PlayerControls================================================
+			var Controls = function()
+			{
+					if(keyboard.pressed("left"))//Moving the player character
+					{
+					player.position.x -= 0.5;
+					}
+					if(keyboard.pressed("right"))
+					{
+					player.position.x += 0.5;
+					}
+					if(keyboard.pressed("up"))
+					{
+						player.position.y += 0.5;
+					}
+					if(keyboard.pressed("down"))
+					{
+						player.position.y -= 0.5;
+					}
+					if(player.position.x > 30)
+					{
+					player.position.x = 30;
+					}
+					if(player.position.x < 0)//Restricting player movement
+					{
+					player.position.x = 0;
+					}
+					if(player.position.y > 20)
+					{
+					player.position.y = 20;
+					}
+					if(player.position.y < 8)
+					{
+					player.position.y = 8;
+					}
+					if(keyboard.pressed("r"))
+					{
+						scene.add(player);
+					}
+				
+			}
+			//=======================CameraControls====================================
+			var cameraControls = function ()
+			{
+				var distance = 0.1;
+				
+				if(keyboard.pressed("a"))
+				{
+					camera.rotation.y += 0.03;
+				}
+				if(keyboard.pressed("d"))
+				{
+					camera.rotation.y -= 0.03;
+				}
+				if(keyboard.pressed("w"))
+				{
+					camera.translateZ(-distance);
+				}
+				if(keyboard.pressed("s"))
+				{
+					camera.translateZ(distance);//Moving the camera down the -Z axis/ The way the camera is facing
+				}
+				if(keyboard.pressed("q"))
+				{
+					camera.rotation.x -= 0.03;
+				}
+				if(keyboard.pressed("e"))
+				{
+					camera.rotation.x += 0.03;
+				}
+				if(keyboard.pressed("space"))
+				{
+					camera.position.x = 15;//Setting camera position
+					camera.position.z = 15;
+					camera.position.y = 15;
+					camera.rotation.x = 0;
+					camera.rotation.y = 0;
+				}
+			}
+			//=============================Collision Detection==========================================
+			
+			var collisionDetection = function ()//Checking for collision between player and enemies
+			{
+			for (i = 0; i < enemies.length; i++)
+				{
+					enemies[i].position.z += Math.random()*1.5+0.5;
+					if (enemies[i].position.z >= 80)
+					{
+						enemies[i].position.z = Math.random()*-200+-170;//Reseting enemy position when they go off screen
+					}
+					
+					if(enemies[i].position.distanceTo(player.position) < 2 * 1)
+					{
+						scene.remove(player);// kill the player 
+						
+					}
+				}
+			}
+			
+			var rotateSkyBox = function ()
+			{
+				skyBox.rotation.x += 0.005;
+				skyBox.rotation.y += 0.005;
+				skyBox.rotation.z += 0.005;
+			}
+			
+			var score = 0;
+			
+			var theScore = function ()
+			{
+				
+				score ++;
+			}
+			
+			var spawnPlayer = function ()
+			{
+					if(keyboard.pressed("g"))
+					{
+						scene.add(player);
+						camera.position.x = 15;//Setting camera position for playing
+						camera.position.z = 15;
+						camera.position.y = 15;
+						camera.rotation.x = 0;
+						camera.rotation.y = 0;
+						camera.rotation.z = 0;
+					}
+			}
+			var Render = function () {//Main function for gameplay & rendering
+				
+				requestAnimationFrame( Render );
+				spawnPlayer();
+				theScore();
+				rotateSkyBox();
+				cameraControls();
+				Controls();
+				collisionDetection();
+				renderer.render(scene, camera);
+			};
+
+			Render();
+
+		</script>
+	</body>
+</html>
